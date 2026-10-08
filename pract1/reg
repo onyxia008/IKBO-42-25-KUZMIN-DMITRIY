@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+    echo "Использование: $0 <файл_программы>"
+    exit 1
+fi
+
+if [ ! -f "$1" ]; then
+    echo "Файл $1 не найден"
+    exit 1
+fi
+
+chmod +x "$1"
+sudo cp "$1" /usr/local/bin/
+echo "Команда $1 успешно зарегистрирована в /usr/local/bin"

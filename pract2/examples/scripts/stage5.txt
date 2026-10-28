@@ -1,0 +1,27 @@
+# Стартовый скрипт этапа 5: touch и help (запуск с deep.xml)
+help
+help touch
+help cal
+ls -l /tmp
+touch /tmp/new.txt
+ls -l /tmp
+cd /home/user
+touch notes.txt "my documents/draft 1.txt" projects/emulator/README.md
+ls
+ls -l "my documents"
+ls projects/emulator
+touch todo.txt
+ls -l todo.txt
+touch /etc
+ls -l /
+vfs-info
+# Ошибки
+touch
+touch /no/such/file.txt
+touch /etc/hostname/inner
+touch /tmp/missing_dir/
+touch /nope/a /tmp/created_anyway
+ls /tmp
+help unknown
+help ls cd
+exit

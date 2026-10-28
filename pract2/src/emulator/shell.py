@@ -3,10 +3,11 @@
 import sys
 
 from emulator.commands import COMMANDS
-from emulator.errors import CommandError, ShellError
+from emulator.errors import CommandError, ScriptError, ShellError
 from emulator.parser import tokenize
 
 DEFAULT_VFS_NAME = "vfs"
+COMMENT_MARK = "#"
 
 
 class Shell:
@@ -67,9 +68,48 @@ class Shell:
                 continue
             self.execute(line)
 
+    def run_script(self, path):
+        """Выполнить стартовый скрипт построчно.
+
+        Каждая строка выводится вместе с приглашением, имитируя
+        диалог с пользователем. Ошибочные строки пропускаются.
+
+        :return: число строк, завершившихся ошибкой.
+        :raises ScriptError: файл скрипта не удалось прочитать.
+        """
+        lines = _read_script(path)
+        errors = 0
+        for number, line in enumerate(lines, start=1):
+            if not self.running:
+                break
+            if _is_skippable(line):
+                continue
+            self.write(self.prompt() + line)
+            if not self.execute(line):
+                errors += 1
+                self.report_error(f"строка {number} скрипта пропущена")
+        return errors
+
     def _dispatch(self, name, args):
         """Найти команду по имени и выполнить её."""
         command = COMMANDS.get(name)
         if command is None:
             raise CommandError(f"{name}: команда не найдена")
         command.handler(self, args)
+
+
+def _read_script(path):
+    """Прочитать строки скрипта из файла."""
+    try:
+        with open(path, encoding="utf-8") as file:
+            return file.read().splitlines()
+    except (OSError, UnicodeDecodeError) as error:
+        raise ScriptError(
+            f"не удалось прочитать скрипт {path}: {error}"
+        ) from None
+
+
+def _is_skippable(line):
+    """Проверить, является ли строка пустой или комментарием."""
+    stripped = line.strip()
+    return not stripped or stripped.startswith(COMMENT_MARK)

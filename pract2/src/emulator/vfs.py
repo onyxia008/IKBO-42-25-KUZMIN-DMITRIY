@@ -136,6 +136,32 @@ class Vfs:
         parts = self.resolve(path, cwd)
         return parts, self.node_at(parts)
 
+    def touch(self, path, cwd):
+        """Создать пустой файл или обновить время изменения узла.
+
+        Изменения выполняются только в памяти.
+
+        :return: True, если файл был создан.
+        :raises VfsError: родительский каталог не существует.
+        """
+        parts = self.resolve(path, cwd)
+        if not parts:
+            self.root.touch()
+            return False
+        parent = self.node_at(parts[:-1])
+        if not parent.is_dir:
+            shown = format_path(parts[:-1])
+            raise VfsError(f"{shown}: не является каталогом")
+        node = parent.children.get(parts[-1])
+        if node is not None:
+            node.touch()
+            return False
+        if path.endswith(SEPARATOR):
+            raise VfsError(f"{path}: нет такого каталога")
+        parent.add(VfsFile(parts[-1]))
+        parent.touch()
+        return True
+
     def count(self):
         """Подсчитать каталоги и файлы (без корня)."""
         dirs = files = 0

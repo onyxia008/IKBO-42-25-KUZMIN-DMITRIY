@@ -15,3 +15,7 @@ class CommandError(ShellError):
 
 class ScriptError(ShellError):
     """Ошибка открытия стартового скрипта."""
+
+
+class VfsError(ShellError):
+    """Ошибка загрузки или работы с VFS."""

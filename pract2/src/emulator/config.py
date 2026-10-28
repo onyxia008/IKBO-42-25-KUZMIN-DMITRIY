@@ -1,7 +1,6 @@
 """Разбор параметров командной строки эмулятора."""
 
 import argparse
-import os
 from dataclasses import dataclass
 
 DEBUG_PREFIX = "[debug]"
@@ -45,14 +44,6 @@ def debug_lines(config):
         f"{DEBUG_PREFIX}   vfs    = {_show(config.vfs_path)}",
         f"{DEBUG_PREFIX}   script = {_show(config.script_path)}",
     ]
-
-
-def vfs_name_from_path(path, default):
-    """Получить имя VFS из пути к ней (имя файла без расширения)."""
-    if not path:
-        return default
-    base = os.path.basename(os.path.normpath(path))
-    return os.path.splitext(base)[0] or default
 
 
 def _show(value):

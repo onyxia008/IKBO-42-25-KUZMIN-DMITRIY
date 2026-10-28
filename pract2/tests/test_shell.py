@@ -4,11 +4,12 @@ import io
 import unittest
 
 from emulator.shell import Shell
+from emulator.vfs import Vfs
 
 
 def make_shell():
     """Создать интерпретатор, пишущий в буфер."""
-    return Shell(vfs_name="test", out=io.StringIO())
+    return Shell(vfs=Vfs("test"), out=io.StringIO())
 
 
 class ShellTest(unittest.TestCase):

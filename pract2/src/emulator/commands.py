@@ -42,6 +42,16 @@ def cmd_exit(shell, args):
     shell.stop(code)
 
 
+def cmd_vfs_info(shell, args):
+    """Служебная команда: вывести сведения о загруженной VFS."""
+    if args:
+        raise CommandError("vfs-info: команда не принимает аргументов")
+    dirs, files = shell.vfs.count()
+    shell.write(f"имя:      {shell.vfs.name}")
+    shell.write(f"источник: {shell.vfs.source or '<в памяти>'}")
+    shell.write(f"каталогов: {dirs}, файлов: {files}")
+
+
 def _parse_exit_code(text):
     """Преобразовать аргумент exit в целое число."""
     try:
@@ -61,4 +71,7 @@ COMMANDS = {
     "ls": Command(cmd_ls, "ls [путь]", "вывести содержимое каталога"),
     "cd": Command(cmd_cd, "cd [путь]", "сменить текущий каталог"),
     "exit": Command(cmd_exit, "exit [код]", "завершить работу эмулятора"),
+    "vfs-info": Command(
+        cmd_vfs_info, "vfs-info", "служебная: сведения о загруженной VFS",
+    ),
 }

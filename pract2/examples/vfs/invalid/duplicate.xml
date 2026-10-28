@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Два узла с одинаковым именем в одном каталоге -->
+<vfs name="dup">
+  <file name="a.txt">1</file>
+  <dir name="a.txt"/>
+</vfs>

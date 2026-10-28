@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Некорректные base64-данные -->
+<vfs name="bad">
+  <file name="data.bin" encoding="base64">@@@not base64@@@</file>
+</vfs>

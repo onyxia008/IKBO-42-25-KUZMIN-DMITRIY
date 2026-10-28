@@ -10,6 +10,7 @@ from emulator.vfs import HOME_DIR
 
 MAX_CD_ARGS = 1
 MAX_EXIT_ARGS = 1
+MAX_HELP_ARGS = 1
 MAX_CAL_ARGS = 2
 CAL_YEAR_ONLY_ARGS = 1
 SINGLE_TARGET = 1
@@ -19,6 +20,7 @@ TIME_FORMAT = "%Y-%m-%d %H:%M"
 DIR_MODE = "drwxr-xr-x"
 FILE_MODE = "-rw-r--r--"
 SIZE_WIDTH = 8
+USAGE_WIDTH = 24
 
 
 @dataclass(frozen=True)
@@ -98,6 +100,40 @@ def cmd_whoami(shell, args):
         shell.write(getpass.getuser())
     except (OSError, KeyError):
         raise CommandError("whoami: не удалось определить имя") from None
+
+
+def cmd_touch(shell, args):
+    """Создать пустые файлы или обновить время изменения.
+
+    Синтаксис ``touch файл [файл ...]``. Изменения — только в памяти.
+    Ошибки по отдельным путям собираются и сообщаются в конце.
+    """
+    if not args:
+        raise CommandError("touch: пропущен операнд, задающий файл")
+    errors = []
+    for path in args:
+        try:
+            shell.vfs.touch(path, shell.cwd)
+        except VfsError as error:
+            errors.append(f"touch: {error}")
+    if errors:
+        raise CommandError("\n".join(errors))
+
+
+def cmd_help(shell, args):
+    """Вывести список команд или справку по одной команде."""
+    if len(args) > MAX_HELP_ARGS:
+        raise CommandError("help: слишком много аргументов")
+    if not args:
+        shell.write("Доступные команды:")
+        for command in COMMANDS.values():
+            shell.write(f"  {command.usage:<{USAGE_WIDTH}} "
+                        f"{command.description}")
+        return
+    command = COMMANDS.get(args[0])
+    if command is None:
+        raise CommandError(f"help: нет справки по «{args[0]}»")
+    shell.write(f"{command.usage}\n    {command.description}")
 
 
 def cmd_exit(shell, args):
@@ -181,6 +217,14 @@ COMMANDS = {
     "echo": Command(cmd_echo, "echo [текст ...]", "вывести аргументы"),
     "whoami": Command(
         cmd_whoami, "whoami", "вывести имя текущего пользователя ОС",
+    ),
+    "touch": Command(
+        cmd_touch, "touch файл [файл ...]",
+        "создать пустой файл или обновить время изменения",
+    ),
+    "help": Command(
+        cmd_help, "help [команда]",
+        "список команд или справка по одной команде",
     ),
     "exit": Command(cmd_exit, "exit [код]", "завершить работу эмулятора"),
     "vfs-info": Command(

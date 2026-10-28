@@ -1,4 +1,4 @@
-"""Тесты команд, работающих с VFS: ls, cd, cal, echo, whoami."""
+"""Тесты встроенных команд: ls, cd, cal, echo, whoami, touch, help."""
 
 import datetime
 import getpass
@@ -163,6 +163,76 @@ class EchoWhoamiTest(CommandTestCase):
     def test_whoami_args(self):
         """whoami с аргументами — ошибка."""
         self.assertIn("не принимает", self.run_fail("whoami root"))
+
+
+class TouchTest(CommandTestCase):
+    """Проверки команды touch."""
+
+    def test_create_file(self):
+        """touch создаёт пустой файл в памяти."""
+        self.run_ok("touch /tmp/new.txt")
+        self.assertEqual(self.shell.vfs.node_at(["tmp", "new.txt"]).size, 0)
+        self.assertEqual(self.run_ok("ls /tmp"), "new.txt\n")
+
+    def test_relative_and_several(self):
+        """touch принимает несколько относительных путей."""
+        self.run_ok("cd /tmp")
+        self.run_ok('touch a "b c"')
+        self.assertEqual(self.run_ok("ls"), "a  'b c'\n")
+
+    def test_existing_file_keeps_data(self):
+        """Для существующего файла обновляется только время."""
+        node = self.shell.vfs.node_at(["etc", "hostname"])
+        node.mtime = 0
+        self.run_ok("touch /etc/hostname")
+        self.assertGreater(node.mtime, 0)
+        self.assertEqual(node.data, "mirea-pc".encode())
+
+    def test_existing_dir(self):
+        """touch для каталога обновляет время, не создавая файл."""
+        self.run_ok("touch /etc")
+        self.assertTrue(self.shell.vfs.node_at(["etc"]).is_dir)
+
+    def test_source_not_modified(self):
+        """Файл VFS на диске не изменяется."""
+        with open(DEEP_VFS, "rb") as file:
+            before = file.read()
+        self.run_ok("touch /tmp/x")
+        with open(DEEP_VFS, "rb") as file:
+            self.assertEqual(file.read(), before)
+
+    def test_errors(self):
+        """Ошибки touch: нет операнда, нет каталога, путь через файл."""
+        self.assertIn("пропущен операнд", self.run_fail("touch"))
+        self.assertIn("нет такого", self.run_fail("touch /nope/a"))
+        self.assertIn("не является каталогом",
+                      self.run_fail("touch /etc/hostname/a"))
+        self.assertIn("нет такого каталога", self.run_fail("touch /tmp/d/"))
+
+    def test_partial_errors(self):
+        """Ошибка по одному пути не мешает остальным."""
+        self.run_fail("touch /nope/a /tmp/ok")
+        self.assertFalse(self.shell.vfs.node_at(["tmp", "ok"]).is_dir)
+
+
+class HelpTest(CommandTestCase):
+    """Проверки команды help."""
+
+    def test_all_commands_listed(self):
+        """help выводит все команды."""
+        output = self.run_ok("help")
+        for name in ("ls", "cd", "cal", "echo", "whoami", "touch",
+                     "help", "exit"):
+            self.assertIn(name, output)
+
+    def test_single_command(self):
+        """help команда выводит её синтаксис."""
+        self.assertIn("touch файл", self.run_ok("help touch"))
+
+    def test_errors(self):
+        """Неизвестная команда и лишние аргументы — ошибки."""
+        self.assertIn("нет справки", self.run_fail("help foo"))
+        self.assertIn("слишком много", self.run_fail("help ls cd"))
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ TIME_FORMAT = "%Y-%m-%d %H:%M"
 DIR_MODE = "drwxr-xr-x"
 FILE_MODE = "-rw-r--r--"
 SIZE_WIDTH = 8
+SPACE = " "
 USAGE_WIDTH = 24
 
 
@@ -188,7 +189,7 @@ def _long_line(node):
 
 def _quote_name(name):
     """Взять имя с пробелами в кавычки, как это делает ls."""
-    return f"'{name}'" if " " in name else name
+    return f"'{name}'" if SPACE in name else name
 
 
 def _parse_exit_code(text):

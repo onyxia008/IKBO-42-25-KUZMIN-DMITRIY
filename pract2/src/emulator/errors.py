@@ -11,3 +11,7 @@ class ParseError(ShellError):
 
 class CommandError(ShellError):
     """Ошибка выполнения команды."""
+
+
+class ScriptError(ShellError):
+    """Ошибка открытия стартового скрипта."""

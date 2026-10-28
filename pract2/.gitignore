@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Сборка
+build/
+dist/
+
+# Редакторы
+.idea/
+.vscode/
+*.swp
+
+# Архивы
+*.zip
+*.tar.gz

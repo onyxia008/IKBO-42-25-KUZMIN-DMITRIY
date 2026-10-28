@@ -53,17 +53,17 @@ class ScriptTest(unittest.TestCase):
 
     def test_echo_input_and_output(self):
         """Скрипт показывает и ввод, и вывод."""
-        shell, errors = self.run_script("ls a\n")
+        shell, errors = self.run_script("echo a\n")
         self.assertEqual(errors, 0)
-        self.assertIn("t:/$ ls a\nls: аргументы ['a']",
+        self.assertIn("t:/$ echo a\na\n",
                       shell.out.getvalue())
 
     def test_errors_are_skipped(self):
         """Ошибочные строки пропускаются, выполнение продолжается."""
-        shell, errors = self.run_script("bad\ncd a b\nls ok\n")
+        shell, errors = self.run_script("bad\ncd a b\necho ok\n")
         self.assertEqual(errors, 2)
         self.assertIn("строка 1 скрипта пропущена", shell.out.getvalue())
-        self.assertIn("['ok']", shell.out.getvalue())
+        self.assertIn("ok", shell.out.getvalue())
 
     def test_comments_and_blank_lines(self):
         """Комментарии и пустые строки не выполняются."""
@@ -72,7 +72,7 @@ class ScriptTest(unittest.TestCase):
 
     def test_exit_stops_script(self):
         """После exit оставшиеся строки не выполняются."""
-        shell, _ = self.run_script("exit 1\nls never\n")
+        shell, _ = self.run_script("exit 1\necho never\n")
         self.assertNotIn("never", shell.out.getvalue())
         self.assertEqual(shell.exit_code, 1)
 

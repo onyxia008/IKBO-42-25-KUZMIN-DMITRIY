@@ -1,4 +1,4 @@
-"""Тесты интерпретатора и команд этапа 1."""
+"""Тесты интерпретатора: REPL, разбор и обработка ошибок."""
 
 import io
 import unittest
@@ -19,12 +19,11 @@ class ShellTest(unittest.TestCase):
         """Приглашение содержит имя VFS."""
         self.assertIn("test", make_shell().prompt())
 
-    def test_ls_stub_prints_args(self):
-        """Заглушка ls выводит своё имя и аргументы."""
+    def test_quoted_args_reach_command(self):
+        """Аргумент в кавычках передаётся команде целиком."""
         shell = make_shell()
-        self.assertTrue(shell.execute('ls -l "my dir"'))
-        self.assertIn("ls: аргументы ['-l', 'my dir']",
-                      shell.out.getvalue())
+        self.assertTrue(shell.execute('echo "a  b" c'))
+        self.assertEqual(shell.out.getvalue(), "a  b c\n")
 
     def test_cd_too_many_args(self):
         """cd с двумя аргументами — ошибка."""
@@ -60,7 +59,7 @@ class ShellTest(unittest.TestCase):
     def test_repl_stops_on_exit(self):
         """REPL читает строки до команды exit."""
         shell = make_shell()
-        lines = iter(["ls", "exit", "ls never"])
+        lines = iter(["echo 1", "exit", "echo never"])
         shell.run_repl(lambda prompt: next(lines))
         self.assertNotIn("never", shell.out.getvalue())
 

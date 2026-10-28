@@ -1,0 +1,32 @@
+# Стартовый скрипт этапа 4: ls, cd, cal, echo, whoami (запуск с deep.xml)
+ls
+ls -l
+ls /etc /bin
+ls -l /home/user
+ls "home/user/my documents"
+ls /etc/hostname
+cd home/user
+ls
+cd projects/emulator/src
+ls -l
+cd ../../..
+cd ..
+cd ~
+cd
+echo Привет, "мир   с пробелами" 'и $HOME буквально'
+echo
+whoami
+cal 10 2026
+cal 2 2024
+cal 2026
+# Ошибки
+ls /no/such/dir
+ls -x
+cd /etc/hostname
+cd /missing
+cd a b
+cal 13 2026
+cal abc
+cal 1 2 3
+whoami root
+exit

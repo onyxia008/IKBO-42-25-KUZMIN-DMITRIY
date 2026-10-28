@@ -1,0 +1,10 @@
+# Стартовый скрипт этапа 2: корректные и ошибочные строки
+ls
+ls -l "my documents"
+cd /home/user
+cd 'dir with spaces'
+unknown_command arg
+cd one two
+echo "unclosed
+ls after_errors
+exit

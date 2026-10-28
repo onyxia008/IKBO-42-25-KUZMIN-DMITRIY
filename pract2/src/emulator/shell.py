@@ -5,6 +5,7 @@ import sys
 from emulator.commands import COMMANDS
 from emulator.errors import CommandError, ScriptError, ShellError
 from emulator.parser import tokenize
+from emulator.vfs import Vfs, format_path
 
 DEFAULT_VFS_NAME = "vfs"
 COMMENT_MARK = "#"
@@ -13,20 +14,21 @@ COMMENT_MARK = "#"
 class Shell:
     """Интерпретатор команд эмулятора.
 
-    :param vfs_name: имя VFS, отображаемое в приглашении.
+    :param vfs: виртуальная файловая система (по умолчанию пустая).
     :param out: поток вывода.
     """
 
-    def __init__(self, vfs_name=DEFAULT_VFS_NAME, out=None):
+    def __init__(self, vfs=None, out=None):
         """Создать интерпретатор."""
-        self.vfs_name = vfs_name
+        self.vfs = vfs if vfs is not None else Vfs(DEFAULT_VFS_NAME)
+        self.cwd = []
         self.out = out if out is not None else sys.stdout
         self.running = True
         self.exit_code = 0
 
     def prompt(self):
-        """Сформировать приглашение к вводу с именем VFS."""
-        return f"{self.vfs_name}:/$ "
+        """Сформировать приглашение: имя VFS и текущий каталог."""
+        return f"{self.vfs.name}:{format_path(self.cwd)}$ "
 
     def write(self, text):
         """Вывести строку в поток вывода."""

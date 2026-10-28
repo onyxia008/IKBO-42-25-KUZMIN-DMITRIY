@@ -6,11 +6,10 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr
 
-from emulator.config import (
-    Config, debug_lines, parse_args, vfs_name_from_path,
-)
+from emulator.config import Config, debug_lines, parse_args
 from emulator.errors import ScriptError
 from emulator.shell import Shell
+from emulator.vfs import Vfs
 
 
 class ConfigTest(unittest.TestCase):
@@ -36,18 +35,13 @@ class ConfigTest(unittest.TestCase):
         self.assertIn("vfs    = a.xml", text)
         self.assertIn("script = <не задан>", text)
 
-    def test_vfs_name(self):
-        """Имя VFS берётся из имени файла без расширения."""
-        self.assertEqual(vfs_name_from_path("x/demo.xml", "d"), "demo")
-        self.assertEqual(vfs_name_from_path(None, "d"), "d")
-
 
 class ScriptTest(unittest.TestCase):
     """Проверки выполнения стартового скрипта."""
 
     def run_script(self, text):
         """Записать скрипт во временный файл и выполнить его."""
-        shell = Shell(vfs_name="t", out=io.StringIO())
+        shell = Shell(vfs=Vfs("t"), out=io.StringIO())
         with tempfile.NamedTemporaryFile(
                 "w", suffix=".txt", delete=False, encoding="utf-8") as file:
             file.write(text)

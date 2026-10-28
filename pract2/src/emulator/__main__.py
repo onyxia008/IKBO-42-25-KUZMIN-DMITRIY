@@ -2,11 +2,13 @@
 
 import sys
 
-from emulator.config import debug_lines, parse_args, vfs_name_from_path
-from emulator.errors import ScriptError
-from emulator.shell import DEFAULT_VFS_NAME, Shell
+from emulator.config import debug_lines, parse_args
+from emulator.errors import ScriptError, VfsError
+from emulator.shell import Shell
+from emulator.vfs import load_vfs
 
 EXIT_SCRIPT_ERROR = 2
+EXIT_VFS_ERROR = 3
 
 
 def main(argv=None):
@@ -14,8 +16,12 @@ def main(argv=None):
     config = parse_args(argv)
     for line in debug_lines(config):
         print(line)
-    name = vfs_name_from_path(config.vfs_path, DEFAULT_VFS_NAME)
-    shell = Shell(vfs_name=name)
+    try:
+        vfs = load_vfs(config.vfs_path) if config.vfs_path else None
+    except VfsError as error:
+        print(f"ошибка: {error}")
+        return EXIT_VFS_ERROR
+    shell = Shell(vfs=vfs)
     if config.script_path:
         try:
             errors = shell.run_script(config.script_path)

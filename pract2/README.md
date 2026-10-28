@@ -28,13 +28,35 @@
 
 Если скрипт не удалось прочитать, эмулятор завершается с кодом 2.
 
+## VFS
+
+Источник VFS — XML-файл. Все операции выполняются в памяти,
+исходный файл не изменяется. Двоичные данные хранятся в base64.
+
+```xml
+<vfs name="demo">
+  <dir name="home">
+    <file name="note.txt">текст</file>
+    <file name="logo.bin" encoding="base64">iVBORw0KGgo=</file>
+  </dir>
+</vfs>
+```
+
+Имя VFS (атрибут `name`, иначе имя файла) показывается в приглашении.
+При ошибке загрузки (файл не найден, неверный XML или структура)
+эмулятор сообщает об ошибке и завершается с кодом 3.
+Служебная команда `vfs-info` выводит сведения о загруженной VFS.
+
+Примеры: `examples/vfs/minimal.xml`, `multi.xml`, `deep.xml`,
+ошибочные — `examples/vfs/invalid/`. Проверка: `scripts/test_vfs.sh`.
+
 ## Запуск и тесты
 
 ```sh
 ./run.sh        # Linux/macOS
 run.bat         # Windows
 make test       # тесты (unittest)
-./run.sh --vfs examples/vfs/myfs.xml --script examples/scripts/stage2.txt
+./run.sh --vfs examples/vfs/deep.xml --script examples/scripts/stage2.txt
 ```
 
 Скрипты ОС для проверки параметров: `scripts/test_params.sh`,

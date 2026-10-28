@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Не менее 3 уровней файлов и каталогов -->
+<vfs name="deep">
+  <dir name="bin">
+    <file name="tool" encoding="base64">iVBORw0KGgoAAQL/</file>
+  </dir>
+  <dir name="etc">
+    <file name="hostname">mirea-pc</file>
+    <dir name="app">
+      <file name="app.conf">debug=false</file>
+    </dir>
+  </dir>
+  <dir name="home">
+    <dir name="user">
+      <file name="todo.txt">сдать практику</file>
+      <dir name="my documents">
+        <file name="report.txt">Отчёт</file>
+      </dir>
+      <dir name="projects">
+        <dir name="emulator">
+          <dir name="src">
+            <file name="main.py">print("hello")</file>
+          </dir>
+        </dir>
+      </dir>
+    </dir>
+  </dir>
+  <dir name="tmp"/>
+</vfs>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Несколько файлов в корне, в том числе двоичный (base64) -->
+<vfs name="multi">
+  <file name="readme.txt">Привет из VFS!</file>
+  <file name="notes.md"># Заметки</file>
+  <file name="empty.txt"/>
+  <file name="logo.png" encoding="base64">iVBORw0KGgoAAQL/</file>
+</vfs>

@@ -1,0 +1,12 @@
+# Стартовый скрипт этапа 3: команды этапов 1-3 и работа с VFS
+vfs-info
+ls
+ls -l "my documents"
+cd /home/user
+cd 'dir with spaces'
+vfs-info extra
+unknown_command arg
+cd one two
+echo "unclosed
+exit not_a_number
+exit

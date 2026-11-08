@@ -8,6 +8,11 @@
 | Этап | Что реализовано | Тег |
 |---|---|---|
 | 1. Прототип | чтение параметров из JSON, вывод «ключ: значение», ошибки | `pract3-stage-1` |
+| 2. Сбор данных | прямые зависимости заданной версии пакета из реестра npm | `pract3-stage-2` |
+
+Данные запрашиваются по HTTP напрямую, без npm и сторонних библиотек:
+`GET <repository>/<package>/<version>`. Прямые зависимости берутся
+из поля `dependencies` ответа.
 
 ## 2. Настройки
 
@@ -23,6 +28,10 @@
 | `ascii_tree` | true/false | режим вывода зависимостей в виде ASCII-дерева |
 | `filter` | строка | подстрока для фильтрации пакетов, может быть пустой |
 
+Сейчас работают `package`, `repository` и `version`. Параметры `test_mode`,
+`ascii_tree` и `filter` уже проверяются, но заработают на следующих этапах:
+при `test_mode: true` приложение пока сообщает об ошибке.
+
 ## 3. Функции
 
 `src/config.py`:
@@ -37,11 +46,18 @@
 | `_check_repository(data, test_mode)` | проверяет URL или путь к файлу |
 | `_check_version(data)` | проверяет формат версии |
 
+`src/npm.py`:
+
+| Функция | Назначение |
+|---|---|
+| `get_direct_dependencies(config)` | возвращает прямые зависимости заданной версии пакета |
+| `_fetch_json(url)` | загружает и разбирает JSON-документ по URL |
+
 `src/main.py`:
 
 | Функция | Назначение |
 |---|---|
-| `main(args)` | читает конфигурацию, выводит параметры, возвращает код возврата |
+| `main(args)` | читает конфигурацию, выводит зависимости, возвращает код возврата |
 
 При любой ошибке приложение пишет сообщение в stderr и завершается с кодом 1.
 
@@ -61,16 +77,21 @@ sh examples/demo_errors.sh          # демонстрация ошибок вс
 
 ```
 $ ./run.sh
-package: express
-repository: https://registry.npmjs.org
-test_mode: False
-version: 4.18.2
-ascii_tree: False
-filter: 
+Прямые зависимости express@4.18.2: 31
+qs: 6.11.0
+depd: 2.0.0
+etag: ~1.8.1
+...
 
 $ ./run.sh examples/errors/version_bad_format.json
 Ошибка: version: '^4.0.0' — нужен формат 1.2.3
 
 $ ./run.sh examples/errors/package_missing.json
 Ошибка: package: параметр не задан
+```
+
+Если версии или пакета нет в реестре:
+
+```
+Ошибка: https://registry.npmjs.org/express/9.9.9: HTTP Error 404: Not Found
 ```

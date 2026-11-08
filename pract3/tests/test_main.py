@@ -18,15 +18,27 @@ CONFIG = """{
     "filter": "test"
 }"""
 
+MANIFEST = b"""{
+    "name": "express",
+    "version": "4.18.2",
+    "dependencies": {"accepts": "~1.3.8", "qs": "6.11.0"}
+}"""
+
 
 class MainTest(unittest.TestCase):
     """Поведение приложения при запуске."""
 
     def setUp(self):
-        """Подготовить путь к временному файлу конфигурации."""
+        """Подготовить временный файл и заменить обращение к сети."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.path = os.path.join(folder.name, "config.json")
+        patcher = mock.patch(
+            "urllib.request.urlopen",
+            side_effect=lambda *_, **__: io.BytesIO(MANIFEST),
+        )
+        self.urlopen = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def write(self, text):
         """Записать текст во временный файл конфигурации."""
@@ -41,19 +53,25 @@ class MainTest(unittest.TestCase):
             code = main(args)
         return code, out.getvalue(), err.getvalue()
 
-    def test_prints_all_parameters_as_key_value(self):
-        """Выводятся все шесть параметров в формате ключ: значение."""
+    def test_prints_direct_dependencies(self):
+        """Выводятся все прямые зависимости заданной версии."""
         self.write(CONFIG)
         code, out, _ = self.run_main([self.path])
         self.assertEqual(code, 0)
         self.assertEqual(out.splitlines(), [
-            "package: express",
-            "repository: https://registry.npmjs.org",
-            "test_mode: False",
-            "version: 4.18.2",
-            "ascii_tree: True",
-            "filter: test",
+            "Прямые зависимости express@4.18.2: 2",
+            "accepts: ~1.3.8",
+            "qs: 6.11.0",
         ])
+
+    def test_registry_failure_reports_error(self):
+        """Ошибка реестра даёт код 1 и сообщение в stderr."""
+        self.write(CONFIG)
+        self.urlopen.side_effect = TimeoutError("timed out")
+        code, out, err = self.run_main([self.path])
+        self.assertEqual(code, 1)
+        self.assertEqual(out, "")
+        self.assertIn("Ошибка", err)
 
     def test_invalid_config_reports_error(self):
         """При ошибке код возврата 1, сообщение в stderr, stdout пуст."""
@@ -69,7 +87,7 @@ class MainTest(unittest.TestCase):
         with mock.patch("src.main.DEFAULT_CONFIG", self.path):
             code, out, _ = self.run_main([])
         self.assertEqual(code, 0)
-        self.assertIn("package: express", out)
+        self.assertIn("accepts: ~1.3.8", out)
 
 
 if __name__ == "__main__":

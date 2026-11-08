@@ -1,0 +1,8 @@
+{
+  "package": "A",
+  "repository": "no/such/graph.txt",
+  "test_mode": true,
+  "version": "4.18.2",
+  "ascii_tree": false,
+  "filter": ""
+}

@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -9,41 +10,68 @@ from unittest import mock
 
 from src.main import main
 
-CONFIG = """{
+REAL = {
     "package": "express",
     "repository": "https://registry.npmjs.org",
-    "test_mode": false,
+    "test_mode": False,
     "version": "4.18.2",
-    "ascii_tree": true,
-    "filter": "test"
-}"""
+    "ascii_tree": False,
+    "filter": "",
+}
 
-MANIFEST = b"""{
-    "name": "express",
-    "version": "4.18.2",
-    "dependencies": {"accepts": "~1.3.8", "qs": "6.11.0"}
-}"""
+DEPENDENCIES = {
+    "https://registry.npmjs.org/express/4.18.2": {
+        "accepts": "~1.3.8",
+        "qs": "6.11.0",
+    },
+    "https://registry.npmjs.org/accepts/1.3.8": {"negotiator": "0.6.3"},
+    "https://registry.npmjs.org/qs/6.11.0": {},
+    "https://registry.npmjs.org/negotiator/0.6.3": {},
+}
+
+
+def fake_urlopen(url, **_):
+    """Ответить как реестр npm: манифест версии пакета по URL."""
+    base, version = url.rsplit("/", 1)
+    manifest = {
+        "name": base.rsplit("/", 1)[1],
+        "version": version,
+        "dependencies": DEPENDENCIES[url],
+    }
+    return io.BytesIO(json.dumps(manifest).encode("utf-8"))
 
 
 class MainTest(unittest.TestCase):
     """Поведение приложения при запуске."""
 
     def setUp(self):
-        """Подготовить временный файл и заменить обращение к сети."""
+        """Подготовить временную папку и заменить обращение к сети."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
-        self.path = os.path.join(folder.name, "config.json")
-        patcher = mock.patch(
-            "urllib.request.urlopen",
-            side_effect=lambda *_, **__: io.BytesIO(MANIFEST),
-        )
+        self.folder = folder.name
+        patcher = mock.patch("urllib.request.urlopen", side_effect=fake_urlopen)
         self.urlopen = patcher.start()
         self.addCleanup(patcher.stop)
 
-    def write(self, text):
-        """Записать текст во временный файл конфигурации."""
-        with open(self.path, "w", encoding="utf-8") as file:
+    def write(self, name, text):
+        """Записать текст во временный файл и вернуть путь к нему."""
+        path = os.path.join(self.folder, name)
+        with open(path, "w", encoding="utf-8") as file:
             file.write(text)
+        return path
+
+    def config(self, **changes):
+        """Записать конфигурацию с изменёнными параметрами."""
+        return self.write("config.json", json.dumps({**REAL, **changes}))
+
+    def graph_config(self, graph, package="A", **changes):
+        """Записать граф тестового репозитория и конфигурацию к нему."""
+        return self.config(
+            test_mode=True,
+            package=package,
+            repository=self.write("graph.txt", graph),
+            **changes,
+        )
 
     @staticmethod
     def run_main(args):
@@ -53,41 +81,69 @@ class MainTest(unittest.TestCase):
             code = main(args)
         return code, out.getvalue(), err.getvalue()
 
-    def test_prints_direct_dependencies(self):
-        """Выводятся все прямые зависимости заданной версии."""
-        self.write(CONFIG)
-        code, out, _ = self.run_main([self.path])
+    def test_prints_graph_from_registry(self):
+        """Граф строится по реестру с учётом транзитивных зависимостей."""
+        code, out, _ = self.run_main([self.config()])
         self.assertEqual(code, 0)
         self.assertEqual(out.splitlines(), [
-            "Прямые зависимости express@4.18.2: 2",
-            "accepts: ~1.3.8",
-            "qs: 6.11.0",
+            "Граф зависимостей express@4.18.2 (пакетов: 4)",
+            "express -> accepts, qs",
+            "accepts -> negotiator",
+            "qs -> (нет зависимостей)",
+            "negotiator -> (нет зависимостей)",
         ])
+
+    def test_test_mode_reads_graph_file_without_network(self):
+        """В тестовом режиме граф берётся из файла, сеть не нужна."""
+        path = self.graph_config("A: B C\nB: C\nC: A\n")
+        code, out, _ = self.run_main([path])
+        self.assertEqual(code, 0)
+        self.assertEqual(out.splitlines(), [
+            "Граф зависимостей A (пакетов: 3)",
+            "A -> B, C",
+            "B -> C",
+            "C -> A",
+        ])
+        self.urlopen.assert_not_called()
+
+    def test_filter_from_config_removes_packages(self):
+        """Подстрока filter из конфигурации убирает пакеты из графа."""
+        path = self.graph_config("A: B C\nB: C\n", filter="B")
+        _, out, _ = self.run_main([path])
+        self.assertEqual(out.splitlines(), [
+            "Граф зависимостей A (пакетов: 2)",
+            "A -> C",
+            "C -> (нет зависимостей)",
+        ])
+
+    def test_unknown_test_package_is_error(self):
+        """Пакета нет в тестовом репозитории — код 1 и сообщение."""
+        code, out, err = self.run_main([self.graph_config("A: B\n", "Z")])
+        self.assertEqual(code, 1)
+        self.assertEqual(out, "")
+        self.assertIn("'Z'", err)
 
     def test_registry_failure_reports_error(self):
         """Ошибка реестра даёт код 1 и сообщение в stderr."""
-        self.write(CONFIG)
         self.urlopen.side_effect = TimeoutError("timed out")
-        code, out, err = self.run_main([self.path])
+        code, out, err = self.run_main([self.config()])
         self.assertEqual(code, 1)
         self.assertEqual(out, "")
         self.assertIn("Ошибка", err)
 
     def test_invalid_config_reports_error(self):
         """При ошибке код возврата 1, сообщение в stderr, stdout пуст."""
-        self.write("{}")
-        code, out, err = self.run_main([self.path])
+        code, out, err = self.run_main([self.write("config.json", "{}")])
         self.assertEqual(code, 1)
         self.assertEqual(out, "")
         self.assertIn("Ошибка", err)
 
     def test_without_arguments_reads_default_file(self):
         """Без аргументов читается файл конфигурации по умолчанию."""
-        self.write(CONFIG)
-        with mock.patch("src.main.DEFAULT_CONFIG", self.path):
+        with mock.patch("src.main.DEFAULT_CONFIG", self.config()):
             code, out, _ = self.run_main([])
         self.assertEqual(code, 0)
-        self.assertIn("accepts: ~1.3.8", out)
+        self.assertIn("express -> accepts, qs", out)
 
 
 if __name__ == "__main__":

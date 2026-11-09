@@ -1,0 +1,8 @@
+{
+  "package": "A",
+  "repository": "examples/repos/broken.txt",
+  "test_mode": true,
+  "version": "1.0.0",
+  "ascii_tree": false,
+  "filter": ""
+}

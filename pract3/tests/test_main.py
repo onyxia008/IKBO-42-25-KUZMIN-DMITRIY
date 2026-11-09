@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 
 from src.main import main
+from src.visual import VisualError
 
 REAL = {
     "package": "express",
@@ -47,12 +48,18 @@ class MainTest(unittest.TestCase):
     """Поведение приложения при запуске."""
 
     def setUp(self):
-        """Подготовить временную папку и заменить обращение к сети."""
+        """Подготовить папку, заменить сеть и рисование картинки."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.folder = folder.name
         patcher = mock.patch("urllib.request.urlopen", side_effect=fake_urlopen)
         self.urlopen = patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch(
+            "src.main.show_image",
+            side_effect=lambda text, name: f"graph-{name}.svg",
+        )
+        self.show_image = patcher.start()
         self.addCleanup(patcher.stop)
 
     def write(self, name, text):
@@ -89,10 +96,11 @@ class MainTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(out.splitlines(), [
             "Граф зависимостей express@4.18.2 (пакетов: 4)",
-            "express -> accepts, qs",
-            "accepts -> negotiator",
-            "qs -> (нет зависимостей)",
-            "negotiator -> (нет зависимостей)",
+            '"express"',
+            '"express" -> "accepts"',
+            '"express" -> "qs"',
+            '"accepts" -> "negotiator"',
+            "Картинка графа: graph-express.svg",
         ])
 
     def test_test_mode_reads_graph_file_without_network(self):
@@ -102,9 +110,12 @@ class MainTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(out.splitlines(), [
             "Граф зависимостей A (пакетов: 3)",
-            "A -> B, C",
-            "B -> C",
-            "C -> A",
+            '"A"',
+            '"A" -> "B"',
+            '"A" -> "C"',
+            '"B" -> "C"',
+            '"C" -> "A"',
+            "Картинка графа: graph-A.svg",
         ])
         self.urlopen.assert_not_called()
 
@@ -114,9 +125,35 @@ class MainTest(unittest.TestCase):
         _, out, _ = self.run_main([path])
         self.assertEqual(out.splitlines(), [
             "Граф зависимостей A (пакетов: 2)",
-            "A -> C",
-            "C -> (нет зависимостей)",
+            '"A"',
+            '"A" -> "C"',
+            "Картинка графа: graph-A.svg",
         ])
+
+    def test_ascii_tree_is_printed_when_enabled(self):
+        """При ascii_tree: true после описания D2 выводится дерево."""
+        path = self.graph_config("A: B C\nB: D\n", ascii_tree=True)
+        _, out, _ = self.run_main([path])
+        self.assertEqual(out.splitlines()[-5:], [
+            "A",
+            "├── B",
+            "│   └── D",
+            "└── C",
+            "Картинка графа: graph-A.svg",
+        ])
+
+    def test_image_is_drawn_from_d2_description(self):
+        """Картинка рисуется по тому же описанию D2, что выведено."""
+        self.run_main([self.graph_config("A: B\n")])
+        self.show_image.assert_called_once_with('"A"\n"A" -> "B"\n', "A")
+
+    def test_missing_d2_is_reported(self):
+        """Без программы d2 описание выведено, но код возврата 1."""
+        self.show_image.side_effect = VisualError("программа d2 не найдена")
+        code, out, err = self.run_main([self.graph_config("A: B\n")])
+        self.assertEqual(code, 1)
+        self.assertIn('"A" -> "B"', out)
+        self.assertIn("d2 не найдена", err)
 
     def test_unknown_test_package_is_error(self):
         """Пакета нет в тестовом репозитории — код 1 и сообщение."""
@@ -145,7 +182,7 @@ class MainTest(unittest.TestCase):
         with mock.patch("src.main.DEFAULT_CONFIG", self.config()):
             code, out, _ = self.run_main([])
         self.assertEqual(code, 0)
-        self.assertIn("express -> accepts, qs", out)
+        self.assertIn('"express" -> "accepts"', out)
 
     def test_reverse_mode_lists_dependents(self):
         """reverse: пакеты, которые зависят от заданного пакета."""

@@ -9,3 +9,7 @@ venv/
 .vscode/
 *.swp
 .DS_Store
+
+# Картинки и описания D2, которые рисует приложение
+graph-*.d2
+graph-*.svg

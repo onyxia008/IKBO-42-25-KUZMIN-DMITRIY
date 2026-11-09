@@ -7,9 +7,10 @@ from src.config import ConfigError, load_config
 from src.graph import build_graph, invert
 from src.graph_file import GraphFileError, load_graph_file
 from src.npm import RegistryError, fetch_dependencies
+from src.visual import VisualError, ascii_tree, show_image, to_d2
 
 DEFAULT_CONFIG = "config.json"
-ERRORS = (ConfigError, GraphFileError, RegistryError)
+ERRORS = (ConfigError, GraphFileError, RegistryError, VisualError)
 
 
 def load_graph(config):
@@ -65,14 +66,16 @@ def _dict_fetch(repository, package):
     return fetch
 
 
-def print_graph(config, graph):
-    """Вывести граф: заголовок и зависимости каждого пакета."""
-    title = config["package"]
-    if not config["test_mode"]:
-        title += f"@{config['version']}"
+def show_graph(config, graph):
+    """Показать граф: описание D2, по желанию ASCII-дерево и картинку."""
+    package = config["package"]
+    title = package if config["test_mode"] else f"{package}@{config['version']}"
     print(f"Граф зависимостей {title} (пакетов: {len(graph)})")
-    for name, dependencies in graph.items():
-        print(f"{name} -> {', '.join(dependencies) or '(нет зависимостей)'}")
+    d2_text = to_d2(graph, package)
+    print(d2_text, end="")
+    if config["ascii_tree"]:
+        print("\n".join(ascii_tree(graph, package)))
+    print(f"Картинка графа: {show_image(d2_text, package)}")
 
 
 def print_reverse(config, graph):
@@ -95,7 +98,7 @@ def main(args):
         if config["reverse"]:
             print_reverse(config, load_reverse_graph(config))
         else:
-            print_graph(config, load_graph(config))
+            show_graph(config, load_graph(config))
     except ERRORS as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 1

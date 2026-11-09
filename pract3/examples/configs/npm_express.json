@@ -1,0 +1,8 @@
+{
+  "package": "express",
+  "repository": "https://registry.npmjs.org",
+  "test_mode": false,
+  "ascii_tree": false,
+  "filter": "",
+  "version": "4.18.2"
+}

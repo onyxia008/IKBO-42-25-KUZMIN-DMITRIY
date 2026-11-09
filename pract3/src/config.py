@@ -42,6 +42,7 @@ def validate(data):
         "version": _check_version(data),
         "ascii_tree": _get(data, "ascii_tree", bool),
         "filter": _get(data, "filter", str),
+        "reverse": _check_reverse(data, test_mode),
     }
 
 
@@ -90,3 +91,20 @@ def _check_version(data):
     if not VERSION.fullmatch(version):
         raise ConfigError(f"version: '{version}' — нужен формат 1.2.3")
     return version
+
+
+def _check_reverse(data, test_mode):
+    """Проверить необязательный режим обратных зависимостей.
+
+    Найти всех, кто зависит от пакета, можно только в тестовом
+    репозитории: перебрать все пакеты реестра npm нельзя.
+    """
+    if "reverse" not in data:
+        return False
+    reverse = _get(data, "reverse", bool)
+    if reverse and not test_mode:
+        raise ConfigError(
+            "reverse: обратные зависимости ищутся только в тестовом "
+            "репозитории (test_mode: true)"
+        )
+    return reverse

@@ -2,7 +2,7 @@
 
 import unittest
 
-from src.graph import build_graph
+from src.graph import build_graph, invert
 
 
 def fetch_from(repository, calls=None):
@@ -87,6 +87,21 @@ class BuildGraphTest(unittest.TestCase):
         repository = {a: [b] for a, b in zip(names, names[1:])}
         graph = build_graph("P0", "1.0.0", fetch_from(repository), "")
         self.assertEqual(len(graph), 3000)
+
+
+class InvertTest(unittest.TestCase):
+    """Переворот рёбер графа для обратных зависимостей."""
+
+    def test_lists_who_depends_on_each_package(self):
+        """Для каждого пакета — пакеты, которые от него зависят."""
+        self.assertEqual(
+            invert({"A": ["B", "C"], "B": ["C"], "C": []}),
+            {"A": [], "B": ["A"], "C": ["A", "B"]},
+        )
+
+    def test_package_only_mentioned_as_dependency(self):
+        """Пакет без своей записи тоже попадает в перевёрнутый граф."""
+        self.assertEqual(invert({"A": ["B"]}), {"A": [], "B": ["A"]})
 
 
 if __name__ == "__main__":

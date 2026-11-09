@@ -42,8 +42,18 @@ class ValidateTest(unittest.TestCase):
     """Проверка значений параметров."""
 
     def test_accepts_correct_values(self):
-        """Верная конфигурация возвращается без изменений."""
-        self.assertEqual(validate(GOOD), GOOD)
+        """Верная конфигурация возвращается, reverse по умолчанию false."""
+        self.assertEqual(validate(GOOD), {**GOOD, "reverse": False})
+
+    def test_reverse_must_be_boolean(self):
+        """Необязательный параметр reverse — true или false."""
+        with self.assertRaisesRegex(ConfigError, "^reverse:"):
+            validate({**GOOD, "reverse": "yes"})
+
+    def test_reverse_needs_test_mode(self):
+        """Обратные зависимости ищутся только в тестовом репозитории."""
+        with self.assertRaisesRegex(ConfigError, "^reverse:"):
+            validate({**GOOD, "reverse": True})
 
     def test_accepts_scoped_package(self):
         """Имя вида @scope/name допустимо для npm."""
@@ -85,7 +95,11 @@ class TestRepositoryModeTest(unittest.TestCase):
 
     def test_accepts_existing_file_and_uppercase_name(self):
         """Существующий файл и имя из больших букв допустимы."""
-        self.assertEqual(validate(self.data), self.data)
+        self.assertEqual(validate(self.data), {**self.data, "reverse": False})
+
+    def test_accepts_reverse_mode(self):
+        """В тестовом режиме можно включить обратные зависимости."""
+        self.assertIs(validate({**self.data, "reverse": True})["reverse"], True)
 
     def test_rejects_missing_file(self):
         """Путь к несуществующему файлу отклоняется."""
@@ -117,7 +131,7 @@ class LoadConfigTest(unittest.TestCase):
     def test_reads_parameters_from_file(self):
         """Параметры читаются из JSON-файла."""
         self.write(json.dumps(GOOD))
-        self.assertEqual(load_config(self.path), GOOD)
+        self.assertEqual(load_config(self.path), {**GOOD, "reverse": False})
 
     def test_missing_file_is_config_error(self):
         """Отсутствие файла — ошибка конфигурации."""

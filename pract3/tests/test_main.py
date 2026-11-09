@@ -29,6 +29,8 @@ DEPENDENCIES = {
     "https://registry.npmjs.org/negotiator/0.6.3": {},
 }
 
+DIAMOND = "A: B C\nB: D\nC: D\nD:\n"
+
 
 def fake_urlopen(url, **_):
     """Ответить как реестр npm: манифест версии пакета по URL."""
@@ -144,6 +146,73 @@ class MainTest(unittest.TestCase):
             code, out, _ = self.run_main([])
         self.assertEqual(code, 0)
         self.assertIn("express -> accepts, qs", out)
+
+    def test_reverse_mode_lists_dependents(self):
+        """reverse: пакеты, которые зависят от заданного пакета."""
+        code, out, _ = self.run_main([
+            self.graph_config(DIAMOND, "D", reverse=True)
+        ])
+        self.assertEqual(code, 0)
+        self.assertEqual(out.splitlines(), [
+            "Обратные зависимости D (пакетов: 3)",
+            "D <- B, C",
+            "B <- A",
+            "C <- A",
+            "A <- (никто не зависит)",
+        ])
+
+    def test_reverse_mode_stops_on_cycle(self):
+        """Цикл виден в выводе, но не зацикливает обход."""
+        path = self.graph_config("A: B\nB: C\nC: A\n", reverse=True)
+        _, out, _ = self.run_main([path])
+        self.assertEqual(out.splitlines(), [
+            "Обратные зависимости A (пакетов: 2)",
+            "A <- C",
+            "C <- B",
+            "B <- A",
+        ])
+
+    def test_reverse_of_package_nobody_needs(self):
+        """От пакета на вершине графа никто не зависит."""
+        _, out, _ = self.run_main([
+            self.graph_config(DIAMOND, "A", reverse=True)
+        ])
+        self.assertEqual(out.splitlines(), [
+            "Обратные зависимости A (пакетов: 0)",
+            "A <- (никто не зависит)",
+        ])
+
+    def test_reverse_mode_applies_filter(self):
+        """Фильтр убирает пакеты и из обратных зависимостей."""
+        _, out, _ = self.run_main([
+            self.graph_config(DIAMOND, "D", reverse=True, filter="B")
+        ])
+        self.assertEqual(out.splitlines(), [
+            "Обратные зависимости D (пакетов: 2)",
+            "D <- C",
+            "C <- A",
+            "A <- (никто не зависит)",
+        ])
+
+    def test_reverse_of_package_only_mentioned_as_dependency(self):
+        """Пакет без своей строки, но нужный другим, тоже ищется."""
+        _, out, _ = self.run_main([
+            self.graph_config("A: B\n", "B", reverse=True)
+        ])
+        self.assertEqual(out.splitlines(), [
+            "Обратные зависимости B (пакетов: 1)",
+            "B <- A",
+            "A <- (никто не зависит)",
+        ])
+
+    def test_reverse_unknown_package_is_error(self):
+        """Пакета нет в тестовом репозитории — код 1 и сообщение."""
+        code, out, err = self.run_main([
+            self.graph_config(DIAMOND, "Z", reverse=True)
+        ])
+        self.assertEqual(code, 1)
+        self.assertEqual(out, "")
+        self.assertIn("'Z'", err)
 
 
 if __name__ == "__main__":

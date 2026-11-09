@@ -32,3 +32,16 @@ def build_graph(root, version, fetch, exclude):
                 seen.add(dependency)
                 queue.append((dependency, requirement))
     return graph
+
+
+def invert(graph):
+    """Перевернуть рёбра графа: для пакета — кто от него зависит.
+
+    :param graph: словарь {пакет: [его зависимости]}.
+    :return: словарь {пакет: [пакеты, которые от него зависят]}.
+    """
+    reverse = {name: [] for name in graph}
+    for name, dependencies in graph.items():
+        for dependency in dependencies:
+            reverse.setdefault(dependency, []).append(name)
+    return reverse

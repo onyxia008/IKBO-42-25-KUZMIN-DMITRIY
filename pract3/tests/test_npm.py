@@ -57,7 +57,12 @@ class PickVersionTest(unittest.TestCase):
 class FetchDependenciesTest(unittest.TestCase):
     """Запрос к реестру и разбор ответа."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Заменить обращение к сети."""
         patcher = mock.patch("urllib.request.urlopen")
         self.urlopen = patcher.start()

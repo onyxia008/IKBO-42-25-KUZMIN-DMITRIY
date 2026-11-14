@@ -10,7 +10,12 @@ from src.graph_file import GraphFileError, load_graph_file
 class LoadGraphFileTest(unittest.TestCase):
     """Разбор файла вида «A: B C»."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Подготовить путь к временному файлу."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)

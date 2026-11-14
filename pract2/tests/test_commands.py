@@ -18,7 +18,12 @@ DEEP_VFS = os.path.join(
 class CommandTestCase(unittest.TestCase):
     """Базовый класс: интерпретатор с глубокой VFS."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Создать интерпретатор с VFS deep.xml."""
         self.shell = Shell(vfs=load_vfs(DEEP_VFS), out=io.StringIO())
 

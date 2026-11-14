@@ -47,7 +47,12 @@ def fake_urlopen(url, **_):
 class MainTest(unittest.TestCase):
     """Поведение приложения при запуске."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Подготовить папку, заменить сеть и рисование картинки."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)

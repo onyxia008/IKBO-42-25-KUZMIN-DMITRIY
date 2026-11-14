@@ -50,7 +50,12 @@ class LoadTest(unittest.TestCase):
 class PathTest(unittest.TestCase):
     """Проверки разрешения путей."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Загрузить глубокую VFS."""
         self.vfs = load_vfs(example("deep.xml"))
 

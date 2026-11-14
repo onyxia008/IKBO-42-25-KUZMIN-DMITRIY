@@ -84,7 +84,12 @@ class ValidateTest(unittest.TestCase):
 class TestRepositoryModeTest(unittest.TestCase):
     """Проверка параметров в режиме тестового репозитория."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Подготовить верные параметры режима тестирования."""
         self.data = {
             **GOOD,
@@ -117,7 +122,12 @@ class TestRepositoryModeTest(unittest.TestCase):
 class LoadConfigTest(unittest.TestCase):
     """Чтение файла конфигурации."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Подготовить путь к временному файлу."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)

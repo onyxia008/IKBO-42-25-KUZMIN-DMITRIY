@@ -66,7 +66,12 @@ class AsciiTreeTest(unittest.TestCase):
 class ShowImageTest(unittest.TestCase):
     """Картинка: файл D2, запуск программы d2, открытие SVG."""
 
-    def setUp(self):
+    def run(self, result=None):
+        """Перед каждой проверкой выполнить prepare (аналог setUp)."""
+        self.prepare()
+        return super().run(result)
+
+    def prepare(self):
         """Работать во временной папке и не открывать окна."""
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)

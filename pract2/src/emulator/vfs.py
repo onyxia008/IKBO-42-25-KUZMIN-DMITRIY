@@ -16,7 +16,7 @@ import base64
 import binascii
 import os
 import time
-import xml.etree.ElementTree as ElementTree
+import xml.etree.ElementTree as etree
 
 from emulator.errors import VfsError
 
@@ -187,12 +187,12 @@ def load_vfs(path):
     :raises VfsError: файл не найден, неверный XML или структура VFS.
     """
     try:
-        tree = ElementTree.parse(path)
+        tree = etree.parse(path)
     except FileNotFoundError:
         raise VfsError(f"файл VFS не найден: {path}") from None
     except OSError as error:
         raise VfsError(f"не удалось открыть VFS {path}: {error}") from None
-    except ElementTree.ParseError as error:
+    except etree.ParseError as error:
         raise VfsError(f"неверный формат XML в {path}: {error}") from None
     try:
         return _build_vfs(tree.getroot(), path)

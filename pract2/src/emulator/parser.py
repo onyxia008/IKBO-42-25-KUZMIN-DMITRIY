@@ -21,10 +21,10 @@ def tokenize(line):
     :return: список аргументов.
     :raises ParseError: незакрытая кавычка или ``\\`` в конце строки.
     """
-    return _Tokenizer(line).run()
+    return Tokenizer(line).run()
 
 
-class _Tokenizer:
+class Tokenizer:
     """Конечный автомат посимвольного разбора строки."""
 
     def __init__(self, line):
